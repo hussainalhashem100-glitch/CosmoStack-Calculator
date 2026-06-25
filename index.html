@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO Meta Tags -->
+  <title>CosmoStack: Advanced Integration Calculator for Smart Telescopes</title>
+  <meta name="description" content="Calculate precise total exposure and integration times for deep-sky objects using smart telescopes. Baseline profile optimized for the Seestar S30 Pro.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Style -->
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="glow-ring"></div>
+        <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none" />
+          <path d="M12 2A10 10 0 0 0 2 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" />
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+          <line x1="12" y1="2" x2="12" y2="5" stroke="currentColor" stroke-width="1.5" />
+          <line x1="12" y1="19" x2="12" y2="22" stroke="currentColor" stroke-width="1.5" />
+          <line x1="2" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="1.5" />
+          <line x1="19" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        <h1>CosmoStack</h1>
+      </div>
+      <p class="header-subtitle">Advanced Integration Calculator for Smart Telescopes</p>
+      
+      <div class="header-controls">
+        <div class="profile-badge">
+          <span class="status-indicator online"></span>
+          <span class="profile-name">Seestar S30 Pro Profile</span>
+        </div>
+        <button id="night-mode-toggle" class="btn-toggle" title="Toggle Night Vision Mode" aria-label="Toggle Night Mode">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+          <span>Night Vision</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+      <!-- Left Column: Controls -->
+      <section class="control-panel">
+        
+        <!-- Target Search Card -->
+        <div class="card search-card">
+          <h2 class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Target Deep-Sky Object
+          </h2>
+          <div class="search-container">
+            <div class="input-wrapper">
+              <input type="text" id="target-search" placeholder="Search Messier, NGC, IC (e.g. M31, NGC 7000)..." autocomplete="off" aria-label="Search target deep sky object">
+              <button id="clear-search" class="clear-btn" style="display: none;" title="Clear search">×</button>
+            </div>
+            <div id="suggestions" class="suggestions-dropdown" style="display: none;"></div>
+          </div>
+          
+          <!-- Selected Target Details -->
+          <div id="target-details" class="target-details-panel">
+            <div class="dso-main-info">
+              <div class="dso-name-wrap">
+                <span id="dso-name" class="dso-name">M 31</span>
+                <span id="dso-common-name" class="dso-common-name">Andromeda Galaxy</span>
+              </div>
+              <span id="dso-type-tag" class="dso-type-tag type-galaxy">Galaxy</span>
+            </div>
+            
+            <div class="dso-telemetry-grid">
+              <div class="telemetry-item">
+                <span class="label">Apparent Mag (m)</span>
+                <span id="dso-mag" class="value">3.44</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="label">Surface Brightness (Sb)</span>
+                <span id="dso-sb" class="value">22.31 <small>mag/arcsec²</small></span>
+              </div>
+              <div class="telemetry-item">
+                <span class="label">Dimensions</span>
+                <span id="dso-dims" class="value">190.0' x 60.0'</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="label">Data Source</span>
+                <span id="dso-source" class="value source-local">Core Catalog</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sky Conditions Card -->
+        <div class="card env-card">
+          <h2 class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            Atmospheric & Sky Conditions
+          </h2>
+          
+          <!-- Bortle Dropdown -->
+          <div class="input-group">
+            <label for="bortle-scale">Sky Brightness (Bortle Scale)</label>
+            <div class="select-wrapper">
+              <select id="bortle-scale">
+                <option value="21.90">Bortle 1-2 (Excellent Dark Sky) — SQM 21.90</option>
+                <option value="21.60">Bortle 3 (Rural Sky) — SQM 21.60</option>
+                <option value="21.20">Bortle 4 (Transition Sky) — SQM 21.20</option>
+                <option value="20.60">Bortle 5 (Suburban Sky) — SQM 20.60</option>
+                <option value="19.50">Bortle 6 (Bright Suburban Sky) — SQM 19.50</option>
+                <option value="18.70">Bortle 7 (Suburban/Urban Transition) — SQM 18.70</option>
+                <option value="18.00" selected>Bortle 8 (City Sky) — SQM 18.00</option>
+                <option value="17.00">Bortle 9 (Inner-City Sky) — SQM 17.00</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Altitude Slider -->
+          <div class="input-group">
+            <div class="slider-header">
+              <label for="altitude-slider">Target Altitude</label>
+              <div class="badge-row">
+                <span id="altitude-val" class="badge">45°</span>
+                <span id="airmass-val" class="badge secondary">Airmass: 1.41x</span>
+              </div>
+            </div>
+            <input type="range" id="altitude-slider" min="10" max="90" value="45" class="slider">
+            <div class="slider-labels">
+              <span>Horizon (10°)</span>
+              <span>Zenith (90°)</span>
+            </div>
+          </div>
+
+          <!-- Sub-exposure length -->
+          <div class="input-group">
+            <label>Sub-Exposure Length (t<sub>sub</sub>)</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="sub-exposure" id="sub-exposure-10" value="10" checked>
+                <span class="custom-radio">10 Seconds</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="sub-exposure" id="sub-exposure-20" value="20">
+                <span class="custom-radio">20 Seconds</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="input-group toggle-group">
+            <div class="toggle-text">
+              <label for="filter-toggle">Internal Dual-Band Filter</label>
+              <p class="toggle-desc">Filters light pollution. Auto-enabled for Nebulae.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="filter-toggle">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Collapsible hardware Profile -->
+        <details class="card profile-card" id="hardware-details">
+          <summary class="card-title collapsible-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9L9 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
+            Telescope hardware Profile (S30 Pro)
+            <span class="arrow-icon">▼</span>
+          </summary>
+          <div class="collapsible-content">
+            <div class="specs-grid">
+              <div class="spec-item">
+                <span class="label">Aperture (D)</span>
+                <input type="number" id="hw-aperture" value="30" step="1" min="10" max="500">
+                <span class="unit">mm</span>
+              </div>
+              <div class="spec-item">
+                <span class="label">Focal Length (F)</span>
+                <input type="number" id="hw-focal-length" value="160" step="5" min="20" max="2500">
+                <span class="unit">mm</span>
+              </div>
+              <div class="spec-item">
+                <span class="label">Focal Ratio (f)</span>
+                <span id="hw-focal-ratio-val" class="value-read">5.33</span>
+              </div>
+              <div class="spec-item">
+                <span class="label">Pixel Size (p)</span>
+                <input type="number" id="hw-pixel-size" value="2.9" step="0.1" min="0.5" max="15">
+                <span class="unit">µm</span>
+              </div>
+              <div class="spec-item">
+                <span class="label">Quantum Efficiency (QE)</span>
+                <input type="number" id="hw-qe" value="85" step="5" min="10" max="100">
+                <span class="unit">%</span>
+              </div>
+              <div class="spec-item">
+                <span class="label">Read Noise (N<sub>r</sub>)</span>
+                <input type="number" id="hw-read-noise" value="1.5" step="0.1" min="0.1" max="10">
+                <span class="unit">e- RMS</span>
+              </div>
+              <div class="spec-item">
+                <span class="label">Dark Current (I<sub>d</sub>)</span>
+                <input type="number" id="hw-dark-current" value="0.1" step="0.01" min="0.001" max="5">
+                <span class="unit">e-/px/s</span>
+              </div>
+            </div>
+            <button id="reset-hardware" class="btn-secondary">Reset to S30 Pro defaults</button>
+          </div>
+        </details>
+      </section>
+
+      <!-- Right Column: Outputs -->
+      <section class="results-panel">
+        
+        <!-- Live Flux Rates Summary -->
+        <div class="card telemetry-summary">
+          <div class="telemetry-header">
+            <h2 class="card-title">Live Sensor Telemetry</h2>
+            <div id="stack-condition" class="badge info">Optimizing stack...</div>
+          </div>
+          <div class="rates-container">
+            <div class="rate-box">
+              <div class="rate-value cyan-glow" id="calc-signal">0.0000</div>
+              <div class="rate-label">Object Signal (S)<br><small>e⁻ / pixel / sec</small></div>
+            </div>
+            <div class="rate-divider"></div>
+            <div class="rate-box">
+              <div class="rate-value amber-glow" id="calc-sky-noise">0.0000</div>
+              <div class="rate-label">Sky Background (B<sub>sky</sub>)<br><small>e⁻ / pixel / sec</small></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Stacking Tiers -->
+        <div class="tiers-grid">
+          
+          <!-- Tier 1: First Glance -->
+          <div class="card tier-card" id="tier-1-card">
+            <div class="tier-badge t1">Tier 1</div>
+            <h3 class="tier-name">First Glance</h3>
+            <p class="tier-snr">Target SNR: 3.0</p>
+            <div class="time-display" id="t1-time">--m --s</div>
+            <div class="frame-display" id="t1-frames">-- frames</div>
+            
+            <div class="progress-bar-container">
+              <div class="progress-fill t1" id="t1-progress" style="width: 10%;"></div>
+            </div>
+            
+            <p class="tier-description">Minimum integration time for the object's structure to rise clearly above the background sky noise floor. Suitable for confirming target alignment.</p>
+          </div>
+
+          <!-- Tier 2: Decent Picture -->
+          <div class="card tier-card" id="tier-2-card">
+            <div class="tier-badge t2">Tier 2</div>
+            <h3 class="tier-name">Decent Picture</h3>
+            <p class="tier-snr">Target SNR: 12.0</p>
+            <div class="time-display" id="t2-time">--h --m</div>
+            <div class="frame-display" id="t2-frames">-- frames</div>
+            
+            <div class="progress-bar-container">
+              <div class="progress-fill t2" id="t2-progress" style="width: 48%;"></div>
+            </div>
+            
+            <p class="tier-description">Satisfying, clean stack with minimal grain and well-resolved core colors. Excellent for casual sharing and immediate verification of the DSO features.</p>
+          </div>
+
+          <!-- Tier 3: Deep Clean -->
+          <div class="card tier-card" id="tier-3-card">
+            <div class="tier-badge t3">Tier 3</div>
+            <h3 class="tier-name">Deep Clean</h3>
+            <p class="tier-snr">Target SNR: 25.0</p>
+            <div class="time-display" id="t3-time">--h --m</div>
+            <div class="frame-display" id="t3-frames">-- frames</div>
+            
+            <div class="progress-bar-container">
+              <div class="progress-fill t3" id="t3-progress" style="style: 100%;"></div>
+            </div>
+            
+            <p class="tier-description">High-fidelity, smooth, low-noise master stack revealing faint outer halos, spiral arms, or subtle dust lane silhouettes. Perfect for advanced processing.</p>
+          </div>
+          
+      </section>
+
+      <!-- Tonight's Best Targets Panel (Full-Width Grid Column) -->
+      <section class="card tonight-panel">
+        <div class="tonight-header">
+          <h2 class="card-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            Tonight's Best Targets
+          </h2>
+          <span id="tonight-time-meta" class="badge secondary">Scanning sky...</span>
+        </div>
+        
+        <div class="tonight-controls">
+          <div class="input-row-container">
+            <div class="input-group">
+              <label for="obs-location-preset">Observation Site</label>
+              <div class="select-wrapper">
+                <select id="obs-location-preset">
+                  <option value="amman" selected>Amman, Jordan</option>
+                  <option value="london">London, UK</option>
+                  <option value="newyork">New York, USA</option>
+                  <option value="tokyo">Tokyo, Japan</option>
+                  <option value="sydney">Sydney, Australia</option>
+                  <option value="cairo">Cairo, Egypt</option>
+                  <option value="custom">Custom Coordinates...</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="input-group coord-input">
+              <label for="obs-lat">Latitude (°N)</label>
+              <input type="number" id="obs-lat" value="31.95" step="0.01" min="-90" max="90" disabled>
+            </div>
+            
+            <div class="input-group coord-input">
+              <label for="obs-lon">Longitude (°E)</label>
+              <input type="number" id="obs-lon" value="35.91" step="0.01" min="-180" max="180" disabled>
+            </div>
+
+            <button id="btn-use-myloc" class="btn-secondary btn-loc" title="Get coordinates from browser GPS">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+              Use GPS
+            </button>
+          </div>
+
+          <div class="input-row-container">
+            <div class="input-group slider-group">
+              <div class="slider-header">
+                <label for="obs-horizon-slider">Horizon Altitude Cutoff</label>
+                <span id="obs-horizon-val" class="badge">15°</span>
+              </div>
+              <input type="range" id="obs-horizon-slider" min="5" max="30" value="15" class="slider">
+            </div>
+            
+            <div class="input-group filter-group">
+              <label>Target Types</label>
+              <div class="checkbox-container">
+                <label class="check-label">
+                  <input type="checkbox" id="filter-show-galaxies" checked>
+                  <span class="custom-check"></span> Galaxies
+                </label>
+                <label class="check-label">
+                  <input type="checkbox" id="filter-show-nebulae" checked>
+                  <span class="custom-check"></span> Nebulae
+                </label>
+                <label class="check-label">
+                  <input type="checkbox" id="filter-show-clusters" checked>
+                  <span class="custom-check"></span> Clusters
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="tonight-table">
+            <thead>
+              <tr>
+                <th>Target</th>
+                <th>Type</th>
+                <th>Magnitude</th>
+                <th>Surface Brightness</th>
+                <th>Altitude (Time)</th>
+                <th>Visible Window</th>
+                <th>Exposure Time (Decent Picture)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tonight-targets-list">
+              <tr>
+                <td colspan="8" class="placeholder-row">Calculating candidates for the night...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>CosmoStack — Optimized client-side integration engine for smart astrophotography rigs. Hardware baseline: <strong>Seestar S30 Pro</strong>.</p>
+      <p class="footer-meta">Powered by CDS SIMBAD Astronomical Database TAP API fallback. Zero-Point calibrated.</p>
+    </footer>
+  </div>
+
+  <!-- App Script -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+node_modules
+dist
+.netlify
+.gemini
+.env.local
+.env.*.local
+dist-ssr
+*.local
+*.log
