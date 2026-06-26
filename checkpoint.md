@@ -30,10 +30,12 @@ CosmoStack is a client-side Single Page Application (SPA) designed to calculate 
   - Uses the total noise equation per sub-exposure (read noise, dark current, and signals) to solve for required total integration time:
     $$T_{\text{total}} = \left(\frac{SNR \cdot N_{\text{total}}}{S}\right)^2$$
 
-### 4. Dynamic API Fallback & Query Fix
+### 4. Dynamic API Fallback & Missing Flux Resolution
 - Implemented a fallback client-side query to the public **CDS SIMBAD TAP** service in `src/main.js` to dynamically resolve objects not found in our local database.
 - Normalized user searches (e.g. `NGC7000` -> `NGC 7000`) to increase search hit rates and calculate surface brightness on-the-fly, applying the same hand-curated core overrides.
 - **Fixed API 400 Error:** Resolved an issue where SIMBAD TAP queries failed with HTTP 400 Bad Request due to the unsupported ADQL `LOWER()` function. The application now generates capitalization and spacing combinations in JavaScript to perform a standard, indexed `IN ('term1', 'term2', ...)` exact-match query on SIMBAD's `ident.id`.
+- **Added Coordinate Tracking:** Fallback queries now fetch decimal `ra` and `dec` directly from SIMBAD for accurate horizontal sky projections.
+- **Implemented Magnitude/Flux Fallback (Teddy Bear Nebula Fix):** Extended nebulae (such as NGC 7822, Sh2-171, and IC 410) often have no integrated magnitude/flux recorded in SIMBAD's database. Previously, the calculator rejected these targets as "not found." We added an intelligent parsing fallback: if the magnitude is null, the app estimates surface brightness based on the object type (e.g. 21.5 mag/arcsec² for nebulae, 22.4 for galaxies, 20.0 for clusters) and uses it to calculate a realistic magnitude, marking the source as `SIMBAD (Est. Mag)` in the UI.
 
 ### 5. High-Fidelity Front-End UI
 - Created `index.html` structure and `src/style.css` stylesheet providing:
