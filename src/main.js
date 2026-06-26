@@ -497,8 +497,11 @@ function setTarget(dso) {
   elements.dsoDims.textContent = `${dso.dimensions.maj.toFixed(1)}' x ${dso.dimensions.min.toFixed(1)}'`;
   
   if (dso.source === 'simbad') {
-    elements.dsoSource.textContent = "SIMBAD TAP Fallback";
+    elements.dsoSource.textContent = "SIMBAD Fallback";
     elements.dsoSource.className = "value source-simbad";
+  } else if (dso.source === 'simbad_est') {
+    elements.dsoSource.textContent = "SIMBAD (Est. Mag)";
+    elements.dsoSource.className = "value source-simbad-est";
   } else {
     elements.dsoSource.textContent = "Core Catalog";
     elements.dsoSource.className = "value source-local";
@@ -562,7 +565,7 @@ async function triggerSimbadFallback(query) {
   
   // Construct the ADQL query using full table names to ensure maximum parser safety
   const adqlQuery = `
-    SELECT DISTINCT main_id, otype, galdim_majaxis, galdim_minaxis, flux, filter
+    SELECT DISTINCT main_id, otype, ra, dec, galdim_majaxis, galdim_minaxis, flux, filter
     FROM basic
     JOIN ident ON basic.oid = ident.oidref
     LEFT JOIN flux ON basic.oid = flux.oidref AND flux.filter IN ('V', 'B', 'G', 'R')
@@ -612,6 +615,8 @@ function parseSimbadTAPResponse(results, queryName) {
   const colNames = results.metadata.map(c => c.name);
   const idxMainId = colNames.indexOf("main_id");
   const idxOtype = colNames.indexOf("otype");
+  const idxRa = colNames.indexOf("ra");
+  const idxDec = colNames.indexOf("dec");
   const idxMaj = colNames.indexOf("galdim_majaxis");
   const idxMin = colNames.indexOf("galdim_minaxis");
   const idxFlux = colNames.indexOf("flux");
@@ -620,6 +625,8 @@ function parseSimbadTAPResponse(results, queryName) {
   // Group rows (since left joining flux returns a row per filter)
   const mainId = results.data[0][idxMainId];
   const otype = results.data[0][idxOtype] || "Other";
+  const raVal = idxRa !== -1 ? results.data[0][idxRa] : null;
+  const decVal = idxDec !== -1 ? results.data[0][idxDec] : null;
   
   // Find V, G, B, R magnitudes
   const fluxes = {};
@@ -647,14 +654,10 @@ function parseSimbadTAPResponse(results, queryName) {
   if (mag === null && Object.keys(fluxes).length > 0) {
     mag = Object.values(fluxes)[0];
   }
-  if (mag === null) {
-    return null; // magnitude is required for exposure calculations
-  }
   
   // Resolve dimensions (already in arcminutes in SIMBAD galdim columns)
   let maj_arcmin = 2.0;
   let min_arcmin = 2.0;
-  
   if (majVal !== null && majVal > 0) {
     maj_arcmin = majVal;
   }
@@ -664,11 +667,25 @@ function parseSimbadTAPResponse(results, queryName) {
     min_arcmin = maj_arcmin;
   }
   
-  // Calculate Surface Brightness (Sb) mag/arcsec²
-  // Area A = pi * (a * b / 4) * 3600 (where a and b are in arcminutes)
-  // Sb = m + 2.5 * log10(Area)
-  const area_arcsec2 = Math.PI * (maj_arcmin * min_arcmin / 4.0) * 3600.0;
-  const sb = mag + 2.5 * Math.log10(area_arcsec2);
+  let isEstimatedMag = false;
+  let finalSb;
+  
+  if (mag === null) {
+    // Fallback: estimate surface brightness based on object type
+    let defaultSb = 21.8;
+    const ot = otype.toLowerCase();
+    if (ot.includes('galaxy') || ot === 'g') defaultSb = 22.4;
+    else if (ot.includes('nebula') || ot.includes('hii') || ot.includes('remnant') || ot === 'pn' || ot === 'snr') defaultSb = 21.5;
+    else if (ot.includes('cluster') || ot === 'cl' || ot === 'opc' || ot === 'glc') defaultSb = 20.0;
+    
+    finalSb = defaultSb;
+    const area_arcsec2 = Math.PI * (maj_arcmin * min_arcmin / 4.0) * 3600.0;
+    mag = defaultSb - 2.5 * Math.log10(area_arcsec2);
+    isEstimatedMag = true;
+  } else {
+    const area_arcsec2 = Math.PI * (maj_arcmin * min_arcmin / 4.0) * 3600.0;
+    finalSb = mag + 2.5 * Math.log10(area_arcsec2);
+  }
   
   // Map otype
   let standardType = "Emission Nebula"; // fallback
@@ -682,11 +699,10 @@ function parseSimbadTAPResponse(results, queryName) {
   else if (ot.includes('open') || ot === 'opc') standardType = "Open Cluster";
   
   // Normalize Main ID spacing
-  const parts = mainId.split();
+  const parts = mainId.split(/\s+/);
   const cleanMainId = parts.join(' ');
   
   // Apply standard visual core surface brightness overrides if present
-  let finalSb = sb;
   if (SB_OVERRIDES[cleanMainId]) {
     finalSb = SB_OVERRIDES[cleanMainId];
   }
@@ -701,7 +717,9 @@ function parseSimbadTAPResponse(results, queryName) {
       min: min_arcmin
     },
     sb: finalSb,
-    source: "simbad"
+    ra: raVal,
+    dec: decVal,
+    source: isEstimatedMag ? "simbad_est" : "simbad"
   };
 }
 
