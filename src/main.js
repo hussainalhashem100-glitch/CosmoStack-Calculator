@@ -152,8 +152,14 @@ const elements = {
   obsLat: document.getElementById('obs-lat'),
   obsLon: document.getElementById('obs-lon'),
   btnUseMyloc: document.getElementById('btn-use-myloc'),
-  obsHorizonSlider: document.getElementById('obs-horizon-slider'),
-  obsHorizonVal: document.getElementById('obs-horizon-val'),
+  obsAltMin: document.getElementById('obs-alt-min'),
+  obsAltMinVal: document.getElementById('obs-alt-min-val'),
+  obsAltMax: document.getElementById('obs-alt-max'),
+  obsAltMaxVal: document.getElementById('obs-alt-max-val'),
+  obsTimeStart: document.getElementById('obs-time-start'),
+  obsDate: document.getElementById('obs-date'),
+  obsAzMin: document.getElementById('obs-az-min'),
+  obsAzMax: document.getElementById('obs-az-max'),
   filterShowGalaxies: document.getElementById('filter-show-galaxies'),
   filterShowNebulae: document.getElementById('filter-show-nebulae'),
   filterShowClusters: document.getElementById('filter-show-clusters'),
@@ -170,6 +176,17 @@ function init() {
   const defaultTarget = dsoCatalog.find(dso => dso.name === "M 31") || dsoCatalog[0];
   setTarget(defaultTarget);
   
+  // Set default planning date and time (current local time)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  elements.obsDate.value = `${year}-${month}-${day}`;
+  
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(Math.floor(now.getMinutes() / 20) * 20 % 60).padStart(2, '0');
+  elements.obsTimeStart.value = `${hours}:${minutes}`;
+
   // Initial math calculations
   calculate();
   
@@ -290,11 +307,62 @@ function setupEventListeners() {
     }
   });
 
-  elements.obsHorizonSlider.addEventListener('input', (e) => {
+  elements.obsAltMin.addEventListener('input', (e) => {
     const val = parseInt(e.target.value);
-    state.location.horizonLimit = val;
-    elements.obsHorizonVal.textContent = `${val}°`;
+    elements.obsAltMinVal.textContent = `${val}°`;
+    const maxVal = parseInt(elements.obsAltMax.value);
+    if (val > maxVal) {
+      elements.obsAltMax.value = val;
+      elements.obsAltMaxVal.textContent = `${val}°`;
+    }
     updateTonightTargets();
+  });
+
+  elements.obsAltMax.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    elements.obsAltMaxVal.textContent = `${val}°`;
+    const minVal = parseInt(elements.obsAltMin.value);
+    if (val < minVal) {
+      elements.obsAltMin.value = val;
+      elements.obsAltMinVal.textContent = `${val}°`;
+    }
+    updateTonightTargets();
+  });
+
+  elements.obsDate.addEventListener('change', updateTonightTargets);
+  elements.obsTimeStart.addEventListener('change', updateTonightTargets);
+
+  const compassBtns = document.querySelectorAll('.compass-btn');
+  compassBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      compassBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      const dir = btn.dataset.dir;
+      let min = 0, max = 360;
+      switch (dir) {
+        case 'n': min = 315; max = 45; break;
+        case 'ne': min = 0; max = 90; break;
+        case 'e': min = 45; max = 135; break;
+        case 'se': min = 90; max = 180; break;
+        case 's': min = 135; max = 225; break;
+        case 'sw': min = 180; max = 270; break;
+        case 'w': min = 225; max = 315; break;
+        case 'nw': min = 270; max = 360; break;
+        case 'all': min = 0; max = 360; break;
+      }
+      
+      elements.obsAzMin.value = min;
+      elements.obsAzMax.value = max;
+      updateTonightTargets();
+    });
+  });
+
+  [elements.obsAzMin, elements.obsAzMax].forEach(input => {
+    input.addEventListener('input', () => {
+      compassBtns.forEach(b => b.classList.remove('active'));
+      updateTonightTargets();
+    });
   });
 
   elements.filterShowGalaxies.addEventListener('change', (e) => {
@@ -583,8 +651,7 @@ async function triggerSimbadFallback(query) {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'CosmoStackCalculator/1.0'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: params
     });
@@ -915,6 +982,41 @@ function getGMST(jd) {
   return gmst;
 }
 
+function getSunPosition(date) {
+  const jd = getJulianDate(date);
+  const D = jd - 2451545.0;
+  
+  // Mean anomaly of the Sun
+  let g = (357.529 + 0.98560028 * D) % 360;
+  if (g < 0) g += 360;
+  const gRad = g * Math.PI / 180.0;
+  
+  // Mean longitude of the Sun
+  let q = (280.459 + 0.98564736 * D) % 360;
+  if (q < 0) q += 360;
+  
+  // Ecliptic longitude
+  let lambda = (q + 1.915 * Math.sin(gRad) + 0.020 * Math.sin(2 * gRad)) % 360;
+  if (lambda < 0) lambda += 360;
+  const lambdaRad = lambda * Math.PI / 180.0;
+  
+  // Obliquity of the ecliptic
+  const epsilon = (23.439 - 0.00000036 * D) * Math.PI / 180.0;
+  
+  // Sun Declination
+  const sinDec = Math.sin(epsilon) * Math.sin(lambdaRad);
+  const decRad = Math.asin(sinDec);
+  const dec = decRad * 180.0 / Math.PI;
+  
+  // Sun Right Ascension
+  const y = Math.cos(epsilon) * Math.sin(lambdaRad);
+  const x = Math.cos(lambdaRad);
+  let ra = Math.atan2(y, x) * 180.0 / Math.PI;
+  if (ra < 0) ra += 360;
+  
+  return { ra, dec };
+}
+
 function getAltAz(ra, dec, lat, lon, date) {
   const jd = getJulianDate(date);
   const gmst = getGMST(jd);
@@ -1005,6 +1107,16 @@ function formatDuration(totalSeconds) {
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }
 
+// Check if azimuth is in range (handles 360-degree wrapping)
+function isAzimuthInRange(az, min, max) {
+  if (min <= max) {
+    return az >= min && az <= max;
+  } else {
+    // Wrapped case: e.g. min = 315, max = 45.
+    return az >= min || az <= max;
+  }
+}
+
 // Scan visibility and parameters for all targets tonight
 let lastTonightUpdateMs = 0; // Throttle rendering to avoid lags during rapid slider dragging
 function updateTonightTargets() {
@@ -1023,25 +1135,28 @@ function updateTonightTargets() {
   const lon = parseFloat(state.location.lon);
   const preset = state.location.preset;
   const targetTz = preset === 'custom' ? Math.round(lon / 15.0) : LOCATION_PRESETS[preset].tz;
-  const horizonLimit = state.location.horizonLimit;
   
-  const now = new Date();
+  const altMin = parseInt(elements.obsAltMin.value);
+  const altMax = parseInt(elements.obsAltMax.value);
   
-  // Align now to nearest 20-minute mark
-  const nearest20Date = new Date(now);
-  const minutes = nearest20Date.getMinutes();
-  const roundedMin = Math.round(minutes / 20) * 20;
-  nearest20Date.setMinutes(roundedMin, 0, 0);
-  const nearest20Ms = nearest20Date.getTime();
+  const azMinInput = parseFloat(elements.obsAzMin.value) || 0;
+  const azMaxInput = parseFloat(elements.obsAzMax.value) || 360;
+  const azMin = ((azMinInput % 360) + 360) % 360;
+  const azMax = ((azMaxInput % 360) + 360) % 360;
   
-  // Calculate 12 hours local night window bounds (for overall visibility calculations)
-  const targetLocalTime = new Date(now.getTime() + targetTz * 3600 * 1000);
-  const targetDuskLocal = new Date(Date.UTC(
-    targetLocalTime.getUTCFullYear(),
-    targetLocalTime.getUTCMonth(),
-    targetLocalTime.getUTCDate(),
-    18, 0, 0
-  ));
+  const dateVal = elements.obsDate.value;
+  const timeVal = elements.obsTimeStart.value;
+  if (!dateVal || !timeVal) return;
+  
+  // Parse planning date and time in the observation site timezone
+  const [yr, mo, dy] = dateVal.split('-').map(Number);
+  const [hr, mn] = timeVal.split(':').map(Number);
+  
+  const utcMs = Date.UTC(yr, mo - 1, dy, hr, mn, 0);
+  const targetDate = new Date(utcMs - targetTz * 3600 * 1000);
+  
+  // Calculate 12 hours local night window bounds (dusk to dawn) for overall visibility calculations
+  const targetDuskLocal = new Date(Date.UTC(yr, mo - 1, dy, 18, 0, 0));
   const startOfNightUtcMs = targetDuskLocal.getTime() - targetTz * 3600 * 1000;
   
   const samplePoints = [];
@@ -1049,8 +1164,108 @@ function updateTonightTargets() {
     samplePoints.push(startOfNightUtcMs + i * 15 * 60 * 1000);
   }
   
-  // Format metadata header label
-  elements.tonightTimeMeta.textContent = `Center Time: ${formatTargetLocalTime(now.getTime(), targetTz)} (UTC${targetTz >= 0 ? '+' : ''}${targetTz})`;
+  // Display time range text in header badge
+  elements.tonightTimeMeta.textContent = `Planning Time: ${dateVal} ${timeVal} (UTC${targetTz >= 0 ? '+' : ''}${targetTz})`;
+  
+  // Sun altitude calculation at the planning hour
+  const sunPos = getSunPosition(targetDate);
+  const sunAltAz = getAltAz(sunPos.ra, sunPos.dec, lat, lon, targetDate);
+  const sunAlt = sunAltAz.alt;
+
+  // 1. Identify scan range: noon-to-noon of the target night
+  let noonYear = yr;
+  let noonMonth = mo;
+  let noonDay = dy;
+  if (hr < 12) {
+    const prevDay = new Date(Date.UTC(yr, mo - 1, dy - 1));
+    noonYear = prevDay.getUTCFullYear();
+    noonMonth = prevDay.getUTCMonth() + 1;
+    noonDay = prevDay.getUTCDate();
+  }
+  
+  const localNoonMs = Date.UTC(noonYear, noonMonth - 1, noonDay, 12, 0, 0) - targetTz * 3600 * 1000;
+  
+  let astronomicalNightStart = null;
+  let astronomicalNightEnd = null;
+  let minSunAlt = 90;
+  
+  let lastAlt = null;
+  let lastTimeMs = null;
+  
+  for (let i = 0; i <= 288; i++) {
+    const timeMs = localNoonMs + i * 5 * 60 * 1000;
+    const sampleDate = new Date(timeMs);
+    const sPos = getSunPosition(sampleDate);
+    const sAltAz = getAltAz(sPos.ra, sPos.dec, lat, lon, sampleDate);
+    const alt = sAltAz.alt;
+    
+    if (alt < minSunAlt) {
+      minSunAlt = alt;
+    }
+    
+    if (lastAlt !== null) {
+      // Dusk: Sun sinks below -18°
+      if (lastAlt > -18 && alt <= -18) {
+        const fraction = (-18 - lastAlt) / (alt - lastAlt);
+        astronomicalNightStart = lastTimeMs + fraction * (timeMs - lastTimeMs);
+      }
+      // Dawn: Sun rises above -18°
+      if (lastAlt <= -18 && alt > -18) {
+        const fraction = (-18 - lastAlt) / (alt - lastAlt);
+        astronomicalNightEnd = lastTimeMs + fraction * (timeMs - lastTimeMs);
+      }
+    }
+    
+    lastAlt = alt;
+    lastTimeMs = timeMs;
+  }
+  
+  // Render sky status banner
+  const skyStatusBanner = document.getElementById('tonight-sky-status');
+  if (skyStatusBanner) {
+    skyStatusBanner.style.display = 'flex';
+    skyStatusBanner.className = 'sky-status-banner'; // Reset class
+    
+    const selectedTimeMs = targetDate.getTime();
+    
+    if (minSunAlt > -18) {
+      // Case 1: No Astronomical Night on this day
+      skyStatusBanner.classList.add('status-twilight');
+      skyStatusBanner.innerHTML = `🌌 <strong>No Astronomical Night:</strong> The Sun never reaches -18° below the horizon at this latitude on this date (minimum altitude: ${minSunAlt.toFixed(1)}°). Perfect dark period (between Isha and Fajr) does not exist today.`;
+    } else if (astronomicalNightStart === null && astronomicalNightEnd === null) {
+      // Case 2: Polar night / 24-hour Astronomical Night
+      skyStatusBanner.classList.add('status-night');
+      skyStatusBanner.innerHTML = `🌌 <strong>24-Hour Astronomical Night:</strong> The Sun remains below -18° the entire day. Perfect stargazing conditions all day. Sun Altitude: ${sunAlt.toFixed(1)}°`;
+    } else {
+      // Normal Astronomical Night exists
+      const ishaStr = formatTargetLocalTime(astronomicalNightStart, targetTz);
+      const fajrStr = formatTargetLocalTime(astronomicalNightEnd, targetTz);
+      
+      if (selectedTimeMs < astronomicalNightStart) {
+        // Case 3: Before Isha
+        if (sunAlt > 0) {
+          skyStatusBanner.classList.add('status-day');
+          skyStatusBanner.innerHTML = `⚠️ <strong>Daytime:</strong> The Sun is above the horizon. Deep-sky imaging is not possible. Perfect period starts at Isha (${ishaStr}). Sun Altitude: ${sunAlt.toFixed(1)}°`;
+        } else {
+          skyStatusBanner.classList.add('status-twilight');
+          skyStatusBanner.innerHTML = `⚠️ <strong>Before Isha:</strong> Currently in twilight. Perfect period (Astronomical Night) starts at Isha (${ishaStr}) and ends at Fajr (${fajrStr}). Sun Altitude: ${sunAlt.toFixed(1)}°`;
+        }
+      } else if (selectedTimeMs > astronomicalNightEnd) {
+        // Case 4: After Fajr
+        if (sunAlt > 0) {
+          skyStatusBanner.classList.add('status-day');
+          skyStatusBanner.innerHTML = `⚠️ <strong>Daytime:</strong> The Sun is above the horizon. Deep-sky imaging is not possible. Perfect period ended at Fajr (${fajrStr}). Sun Altitude: ${sunAlt.toFixed(1)}°`;
+        } else {
+          skyStatusBanner.classList.add('status-twilight');
+          skyStatusBanner.innerHTML = `⚠️ <strong>After Fajr:</strong> Currently in twilight. Perfect period (Astronomical Night) ended at Fajr (${fajrStr}). Sun Altitude: ${sunAlt.toFixed(1)}°`;
+        }
+      } else {
+        // Case 5: Inside perfect period
+        skyStatusBanner.classList.add('status-night');
+        skyStatusBanner.innerHTML = `🌌 <strong>Astronomical Night:</strong> Perfect stargazing period between Isha (${ishaStr}) and Fajr (${fajrStr}). Sun Altitude: ${sunAlt.toFixed(1)}°`;
+      }
+    }
+  }
   
   // Filter the catalog for "nice stuff and beautiful stuff only"
   const niceCatalog = dsoCatalog.filter(dso => {
@@ -1066,66 +1281,55 @@ function updateTonightTargets() {
 
   const bestTargets = [];
   
-  // Scan 73 slots from -36 to +36 (covering previous 12h and next 12h at 20-minute steps)
-  for (let offset = -36; offset <= 36; offset++) {
-    const slotTimeMs = nearest20Ms + offset * 20 * 60 * 1000;
-    const slotDate = new Date(slotTimeMs);
+  niceCatalog.forEach(dso => {
+    if (dso.ra === undefined || dso.dec === undefined || dso.ra === null || dso.dec === null) return;
     
-    let bestDso = null;
-    let maxAlt = -90;
+    // Type checkbox filters
+    const type = dso.type.toLowerCase();
+    const isGalaxy = type.includes('galaxy');
+    const isNebula = type.includes('nebula') || type.includes('remnant') || type.includes('region');
+    const isCluster = type.includes('cluster');
     
-    niceCatalog.forEach(dso => {
-      if (dso.ra === undefined || dso.dec === undefined || dso.ra === null || dso.dec === null) return;
-      
-      // Type checkbox filters
-      const type = dso.type.toLowerCase();
-      const isGalaxy = type.includes('galaxy');
-      const isNebula = type.includes('nebula') || type.includes('remnant');
-      const isCluster = type.includes('cluster');
-      
-      if (isGalaxy && !state.filters.galaxies) return;
-      if (isNebula && !state.filters.nebulae) return;
-      if (isCluster && !state.filters.clusters) return;
-      
-      // Calculate altitude at this slot's time
-      const { alt } = getAltAz(dso.ra, dso.dec, lat, lon, slotDate);
-      if (alt > maxAlt) {
-        maxAlt = alt;
-        bestDso = dso;
+    if (isGalaxy && !state.filters.galaxies) return;
+    if (isNebula && !state.filters.nebulae) return;
+    if (isCluster && !state.filters.clusters) return;
+    
+    // Calculate Alt/Az at the exact target planning date and time
+    const { alt, az } = getAltAz(dso.ra, dso.dec, lat, lon, targetDate);
+    
+    // Filter by altitude and azimuth at this specific start time
+    if (alt >= altMin && alt <= altMax) {
+      if (isAzimuthInRange(az, azMin, azMax)) {
+        // Calculate overall rise/set visibility window for this target tonight
+        const visibleWindowStr = getDsoVisibleWindow(dso, lat, lon, startOfNightUtcMs, samplePoints, altMin, targetTz);
+        
+        // Trend calculation: Compare altitude 20 minutes in the future from start time
+        const { alt: alt20m } = getAltAz(dso.ra, dso.dec, lat, lon, new Date(targetDate.getTime() + 20 * 60 * 1000));
+        let trend = "stable";
+        const diff = alt20m - alt;
+        if (diff > 0.5) {
+          trend = "rising";
+        } else if (diff < -0.5) {
+          trend = "falling";
+        }
+        
+        bestTargets.push({
+          dso,
+          altAtSlot: alt,
+          azAtSlot: az,
+          slotTimeMs: targetDate.getTime(),
+          visibleWindowStr,
+          trend
+        });
       }
-    });
-    
-    if (bestDso && maxAlt >= horizonLimit) {
-      // Calculate overall visibility window for this best target
-      const visibleWindowStr = getDsoVisibleWindow(bestDso, lat, lon, startOfNightUtcMs, samplePoints, horizonLimit, targetTz);
-      
-      bestTargets.push({
-        dso: bestDso,
-        altAtSlot: maxAlt,
-        slotTimeMs,
-        offsetSlots: offset,
-        visibleWindowStr
-      });
     }
-  }
+  });
   
-  // De-duplicate: Group by DSO name and keep the occurrence closest to 90 degrees (highest altitude)
-  const uniqueTargetsMap = new Map();
-  bestTargets.forEach(item => {
-    const existing = uniqueTargetsMap.get(item.dso.name);
-    if (!existing || item.altAtSlot > existing.altAtSlot) {
-      uniqueTargetsMap.set(item.dso.name, item);
-    }
-  });
-  const uniqueTargets = Array.from(uniqueTargetsMap.values());
-
-  // Sort from closest time offset to farthest (offset slots closer to 0 is first)
-  uniqueTargets.sort((a, b) => {
-    return Math.abs(a.offsetSlots) - Math.abs(b.offsetSlots);
-  });
+  // Sort from highest altitude at start time to lowest
+  bestTargets.sort((a, b) => b.altAtSlot - a.altAtSlot);
   
   // Render targets
-  renderTonightTargets(uniqueTargets, targetTz);
+  renderTonightTargets(bestTargets, targetTz);
 }
 
 // Get DSO overall visible window tonight
@@ -1162,7 +1366,7 @@ function renderTonightTargets(visibleList, targetTz) {
   if (visibleList.length === 0) {
     elements.tonightTargetsList.innerHTML = `
       <tr>
-        <td colspan="8" class="placeholder-row">No visible objects found above the horizon cutoff in the 24h window.</td>
+        <td colspan="8" class="placeholder-row">No objects found matching the chosen azimuth, altitude, and time.</td>
       </tr>
     `;
     return;
@@ -1184,29 +1388,17 @@ function renderTonightTargets(visibleList, targetTz) {
     const estSeconds = estimateDecentPictureTime(dso, state.sqm, item.altAtSlot, state.tSub);
     const timeFormatted = formatDuration(estSeconds);
     
-    // Relative offset label in hours/minutes
-    let relTimeStr = "";
-    const offsetMins = item.offsetSlots * 20;
-    if (offsetMins === 0) {
-      relTimeStr = "Now";
-    } else if (offsetMins > 0) {
-      const hrs = Math.floor(offsetMins / 60);
-      const mins = offsetMins % 60;
-      let parts = [];
-      if (hrs > 0) parts.push(`${hrs}h`);
-      if (mins > 0) parts.push(`${mins}m`);
-      relTimeStr = `in ${parts.join(' ')}`;
-    } else {
-      const absMins = Math.abs(offsetMins);
-      const hrs = Math.floor(absMins / 60);
-      const mins = absMins % 60;
-      let parts = [];
-      if (hrs > 0) parts.push(`${hrs}h`);
-      if (mins > 0) parts.push(`${mins}m`);
-      relTimeStr = `${parts.join(' ')} ago`;
-    }
-    
     const slotTimeStr = formatTargetLocalTime(item.slotTimeMs, targetTz);
+    const dateInputVal = elements.obsDate.value;
+    
+    let trendBadge = "";
+    if (item.trend === "rising") {
+      trendBadge = `<span class="trend-indicator trend-rising">▲ Rising</span>`;
+    } else if (item.trend === "falling") {
+      trendBadge = `<span class="trend-indicator trend-falling">▼ Falling</span>`;
+    } else {
+      trendBadge = `<span class="trend-indicator trend-stable">▬ Stable</span>`;
+    }
     
     tr.innerHTML = `
       <td style="font-weight: 600;">
@@ -1217,10 +1409,11 @@ function renderTonightTargets(visibleList, targetTz) {
       <td>${magDisp}</td>
       <td>${sbDisp} <small style="font-size: 0.75rem; color: var(--text-secondary);">mag/arcsec²</small></td>
       <td>
-        <strong>${item.altAtSlot.toFixed(0)}°</strong> 
+        <strong>${item.altAtSlot.toFixed(0)}°</strong> (Az ${item.azAtSlot.toFixed(0)}°)
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
-          ${slotTimeStr} <span style="color: var(--accent-cyan); font-weight: 500;">(${relTimeStr})</span>
+          At ${slotTimeStr} on ${dateInputVal}
         </div>
+        ${trendBadge}
       </td>
       <td><span class="badge secondary" style="margin: 0; padding: 0.25rem 0.5rem; font-size: 0.8rem;">${item.visibleWindowStr}</span></td>
       <td style="font-weight: 700; color: ${estSeconds === Infinity ? 'var(--text-secondary)' : 'var(--text)'};">
@@ -1236,9 +1429,7 @@ function renderTonightTargets(visibleList, targetTz) {
       const match = dsoCatalog.find(obj => obj.name === dso.name);
       if (match) {
         setTarget(match);
-        // Scroll to top smoothly
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // Highlight active row in recommendation list
         updateTonightTargets();
       }
     });

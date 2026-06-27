@@ -322,6 +322,419 @@ def parse_simbad_results(results):
         
     return final_list
 
+BEAUTIFUL_NEBULA_OVERRIDES = [
+    {
+        "name": "NGC 7000",
+        "commonName": "North America Nebula",
+        "type": "Emission Nebula",
+        "mag": 4.0,
+        "dimensions": {"maj": 120.0, "min": 100.0},
+        "sb": 21.5,
+        "ra": 314.75,
+        "dec": 44.3
+    },
+    {
+        "name": "IC 5070",
+        "commonName": "Pelican Nebula",
+        "type": "Emission Nebula",
+        "mag": 8.0,
+        "dimensions": {"maj": 60.0, "min": 50.0},
+        "sb": 22.1,
+        "ra": 312.75,
+        "dec": 44.4
+    },
+    {
+        "name": "IC 1805",
+        "commonName": "Heart Nebula",
+        "type": "Emission Nebula",
+        "mag": 6.5,
+        "dimensions": {"maj": 150.0, "min": 120.0},
+        "sb": 22.0,
+        "ra": 38.18,
+        "dec": 61.45
+    },
+    {
+        "name": "IC 1848",
+        "commonName": "Soul Nebula",
+        "type": "Emission Nebula",
+        "mag": 6.5,
+        "dimensions": {"maj": 150.0, "min": 75.0},
+        "sb": 22.2,
+        "ra": 42.83,
+        "dec": 60.43
+    },
+    {
+        "name": "IC 1396",
+        "commonName": "Elephant's Trunk Nebula",
+        "type": "Emission Nebula",
+        "mag": 3.5,
+        "dimensions": {"maj": 170.0, "min": 140.0},
+        "sb": 22.5,
+        "ra": 324.75,
+        "dec": 57.5
+    },
+    {
+        "name": "NGC 2237",
+        "commonName": "Rosette Nebula",
+        "type": "Emission Nebula",
+        "mag": 9.0,
+        "dimensions": {"maj": 80.0, "min": 60.0},
+        "sb": 22.0,
+        "ra": 98.1,
+        "dec": 4.9
+    },
+    {
+        "name": "NGC 2244",
+        "commonName": "Rosette Cluster",
+        "type": "Open Cluster",
+        "mag": 4.8,
+        "dimensions": {"maj": 24.0, "min": 24.0},
+        "sb": 20.0,
+        "ra": 98.1,
+        "dec": 4.9
+    },
+    {
+        "name": "NGC 1499",
+        "commonName": "California Nebula",
+        "type": "Emission Nebula",
+        "mag": 6.0,
+        "dimensions": {"maj": 145.0, "min": 40.0},
+        "sb": 22.0,
+        "ra": 60.0,
+        "dec": 36.42
+    },
+    {
+        "name": "NGC 6960",
+        "commonName": "Western Veil Nebula / Witch's Broom",
+        "type": "Supernova Remnant",
+        "mag": 7.0,
+        "dimensions": {"maj": 70.0, "min": 6.0},
+        "sb": 21.8,
+        "ra": 311.4,
+        "dec": 30.7
+    },
+    {
+        "name": "NGC 6992",
+        "commonName": "Eastern Veil Nebula",
+        "type": "Supernova Remnant",
+        "mag": 7.0,
+        "dimensions": {"maj": 60.0, "min": 8.0},
+        "sb": 21.5,
+        "ra": 312.75,
+        "dec": 31.7
+    },
+    {
+        "name": "IC 405",
+        "commonName": "Flaming Star Nebula",
+        "type": "Emission Nebula",
+        "mag": 6.0,
+        "dimensions": {"maj": 30.0, "min": 20.0},
+        "sb": 21.0,
+        "ra": 79.05,
+        "dec": 34.27
+    },
+    {
+        "name": "IC 410",
+        "commonName": "Tadpoles Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.5,
+        "dimensions": {"maj": 40.0, "min": 40.0},
+        "sb": 21.8,
+        "ra": 80.65,
+        "dec": 33.52
+    },
+    {
+        "name": "NGC 7635",
+        "commonName": "Bubble Nebula",
+        "type": "Emission Nebula",
+        "mag": 10.0,
+        "dimensions": {"maj": 15.0, "min": 8.0},
+        "sb": 21.5,
+        "ra": 350.2,
+        "dec": 61.2
+    },
+    {
+        "name": "NGC 6888",
+        "commonName": "Crescent Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.4,
+        "dimensions": {"maj": 18.0, "min": 12.0},
+        "sb": 21.0,
+        "ra": 303.0,
+        "dec": 38.35
+    },
+    {
+        "name": "NGC 7380",
+        "commonName": "Wizard Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.2,
+        "dimensions": {"maj": 25.0, "min": 25.0},
+        "sb": 21.0,
+        "ra": 341.75,
+        "dec": 58.1
+    },
+    {
+        "name": "Sh2-155",
+        "commonName": "Cave Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.7,
+        "dimensions": {"maj": 50.0, "min": 30.0},
+        "sb": 22.0,
+        "ra": 344.2,
+        "dec": 62.62
+    },
+    {
+        "name": "NGC 281",
+        "commonName": "Pacman Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.4,
+        "dimensions": {"maj": 35.0, "min": 30.0},
+        "sb": 21.5,
+        "ra": 13.15,
+        "dec": 56.6
+    },
+    {
+        "name": "NGC 2359",
+        "commonName": "Thor's Helmet",
+        "type": "Emission Nebula",
+        "mag": 11.5,
+        "dimensions": {"maj": 10.0, "min": 10.0},
+        "sb": 21.2,
+        "ra": 109.65,
+        "dec": -13.23
+    },
+    {
+        "name": "NGC 7822",
+        "commonName": "NGC 7822 / Sh2-171",
+        "type": "Emission Nebula",
+        "mag": 8.0,
+        "dimensions": {"maj": 60.0, "min": 30.0},
+        "sb": 21.5,
+        "ra": 0.9,
+        "dec": 68.62
+    },
+    {
+        "name": "NGC 2174",
+        "commonName": "Monkey Head Nebula",
+        "type": "Emission Nebula",
+        "mag": 6.8,
+        "dimensions": {"maj": 40.0, "min": 30.0},
+        "sb": 21.2,
+        "ra": 92.43,
+        "dec": 20.5
+    },
+    {
+        "name": "IC 443",
+        "commonName": "Jellyfish Nebula",
+        "type": "Supernova Remnant",
+        "mag": 12.0,
+        "dimensions": {"maj": 50.0, "min": 40.0},
+        "sb": 22.5,
+        "ra": 94.25,
+        "dec": 22.5
+    },
+    {
+        "name": "IC 2177",
+        "commonName": "Seagull Nebula",
+        "type": "Emission Nebula",
+        "mag": 6.0,
+        "dimensions": {"maj": 120.0, "min": 40.0},
+        "sb": 21.8,
+        "ra": 106.1,
+        "dec": -10.3
+    },
+    {
+        "name": "NGC 7023",
+        "commonName": "Iris Nebula",
+        "type": "Reflection Nebula",
+        "mag": 6.8,
+        "dimensions": {"maj": 18.0, "min": 18.0},
+        "sb": 20.5,
+        "ra": 315.45,
+        "dec": 68.17
+    },
+    {
+        "name": "IC 1318",
+        "commonName": "Sadr Region / Butterfly Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.2,
+        "dimensions": {"maj": 50.0, "min": 30.0},
+        "sb": 21.2,
+        "ra": 305.55,
+        "dec": 40.25
+    },
+    {
+        "name": "Sh2-240",
+        "commonName": "Spaghetti Nebula",
+        "type": "Supernova Remnant",
+        "mag": 12.0,
+        "dimensions": {"maj": 180.0, "min": 180.0},
+        "sb": 23.5,
+        "ra": 85.13,
+        "dec": 28.0
+    },
+    {
+        "name": "NGC 3372",
+        "commonName": "Carina Nebula",
+        "type": "Emission Nebula",
+        "mag": 3.0,
+        "dimensions": {"maj": 120.0, "min": 120.0},
+        "sb": 20.0,
+        "ra": 161.25,
+        "dec": -59.87
+    },
+    {
+        "name": "NGC 3576",
+        "commonName": "Statue of Liberty Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.6,
+        "dimensions": {"maj": 30.0, "min": 30.0},
+        "sb": 21.0,
+        "ra": 167.95,
+        "dec": -61.3
+    },
+    {
+        "name": "NGC 6334",
+        "commonName": "Cat's Paw Nebula",
+        "type": "Emission Nebula",
+        "mag": 10.0,
+        "dimensions": {"maj": 35.0, "min": 25.0},
+        "sb": 21.5,
+        "ra": 259.95,
+        "dec": -35.9
+    },
+    {
+        "name": "NGC 6357",
+        "commonName": "Lobster Nebula",
+        "type": "Emission Nebula",
+        "mag": 10.0,
+        "dimensions": {"maj": 25.0, "min": 25.0},
+        "sb": 21.5,
+        "ra": 261.25,
+        "dec": -34.2
+    },
+    {
+        "name": "NGC 7293",
+        "commonName": "Helix Nebula",
+        "type": "Planetary Nebula",
+        "mag": 7.6,
+        "dimensions": {"maj": 25.0, "min": 12.0},
+        "sb": 21.5,
+        "ra": 337.4,
+        "dec": -20.8
+    },
+    {
+        "name": "NGC 6543",
+        "commonName": "Cat's Eye Nebula",
+        "type": "Planetary Nebula",
+        "mag": 8.1,
+        "dimensions": {"maj": 0.3, "min": 0.3},
+        "sb": 14.5,
+        "ra": 269.64,
+        "dec": 66.63
+    },
+    {
+        "name": "NGC 3242",
+        "commonName": "Ghost of Jupiter",
+        "type": "Planetary Nebula",
+        "mag": 7.7,
+        "dimensions": {"maj": 0.7, "min": 0.6},
+        "sb": 15.5,
+        "ra": 156.17,
+        "dec": -18.64
+    },
+    {
+        "name": "NGC 7009",
+        "commonName": "Saturn Nebula",
+        "type": "Planetary Nebula",
+        "mag": 8.0,
+        "dimensions": {"maj": 0.5, "min": 0.4},
+        "sb": 15.0,
+        "ra": 316.05,
+        "dec": -11.36
+    },
+    {
+        "name": "IC 4604",
+        "commonName": "Rho Ophiuchi Nebula",
+        "type": "Reflection Nebula",
+        "mag": 5.0,
+        "dimensions": {"maj": 60.0, "min": 60.0},
+        "sb": 21.5,
+        "ra": 248.5,
+        "dec": -23.4
+    },
+    {
+        "name": "LDN 1622",
+        "commonName": "Boogeyman Nebula",
+        "type": "Dark Nebula",
+        "mag": 14.0,
+        "dimensions": {"maj": 30.0, "min": 20.0},
+        "sb": 23.0,
+        "ra": 87.25,
+        "dec": 1.8
+    },
+    {
+        "name": "Sh2-276",
+        "commonName": "Barnard's Loop",
+        "type": "Emission Nebula",
+        "mag": 10.0,
+        "dimensions": {"maj": 600.0, "min": 100.0},
+        "sb": 24.0,
+        "ra": 84.75,
+        "dec": -7.5
+    },
+    {
+        "name": "NGC 2024",
+        "commonName": "Flame Nebula",
+        "type": "Emission Nebula",
+        "mag": 10.0,
+        "dimensions": {"maj": 30.0, "min": 30.0},
+        "sb": 21.5,
+        "ra": 85.43,
+        "dec": -1.86
+    },
+    {
+        "name": "IC 434",
+        "commonName": "Horsehead Nebula",
+        "type": "Emission Nebula",
+        "mag": 7.3,
+        "dimensions": {"maj": 60.0, "min": 10.0},
+        "sb": 22.0,
+        "ra": 85.25,
+        "dec": -2.45
+    },
+    {
+        "name": "NGC 2070",
+        "commonName": "Tarantula Nebula",
+        "type": "Emission Nebula",
+        "mag": 8.0,
+        "dimensions": {"maj": 40.0, "min": 25.0},
+        "sb": 20.5,
+        "ra": 84.65,
+        "dec": -69.1
+    },
+    {
+        "name": "Sh2-136",
+        "commonName": "Ghost Nebula",
+        "type": "Emission Nebula",
+        "mag": 14.1,
+        "dimensions": {"maj": 8.0, "min": 8.0},
+        "sb": 23.5,
+        "ra": 319.125,
+        "dec": 68.15
+    },
+    {
+        "name": "Vela SNR",
+        "commonName": "Vela Supernova Remnant",
+        "type": "Supernova Remnant",
+        "mag": 12.0,
+        "dimensions": {"maj": 240.0, "min": 240.0},
+        "sb": 24.5,
+        "ra": 128.75,
+        "dec": -45.17
+    }
+]
+
 def main():
     print("Generating core database from SIMBAD TAP...")
     
@@ -461,6 +874,15 @@ def main():
     
     # Combine lists
     combined_catalog = final_messiers + ngc_filtered
+    
+    # 4. Merge hand-curated beautiful nebulae overrides
+    print("Merging hand-curated beautiful nebulae overrides...")
+    overrides_dict = {obj["name"]: obj for obj in BEAUTIFUL_NEBULA_OVERRIDES}
+    # Remove existing catalog entries that match overrides to avoid duplicates
+    combined_catalog = [obj for obj in combined_catalog if obj["name"] not in overrides_dict]
+    # Append the overrides
+    combined_catalog += BEAUTIFUL_NEBULA_OVERRIDES
+    
     print(f"Combined database size: {len(combined_catalog)} objects.")
     
     # Sort combined catalog alphabetically/numerically
